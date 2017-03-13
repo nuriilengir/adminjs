@@ -1,28 +1,69 @@
 import React, { Component, PropTypes } from 'react';
 import { connect } from 'react-redux';
 import { hashHistory } from 'react-router';
+import slug from 'slug';
 import { Menu, Icon, Grid, Segment, Header, Label, Form } from 'semantic-ui-react';
 
 import JInput from '../inputs';
 
 import { setList } from '../../actions/documents';
+import { save } from '../../actions/save';
 
 class EditDocuments extends Component {
   constructor(props) {
     super(props);
-    this.state = {tabIndex: 1};
+    this.state = { tabIndex: 1 };
   }
 
-  componentWillReceiveProps(nextProps) {
+  /*componentWillReceiveProps(nextProps) {
     if(Object.keys(nextProps.options).length === 0) {
       let path = nextProps.location.pathname.substr(nextProps.location.pathname.indexOf('/', 1) + 1);
       this.props.setList(path);
     }
-  }
+  }*/
 
   handleSubmit = (e, { formData }) => {
     e.preventDefault();
-    console.log("Form Submit", formData);
+
+    let path = this.props.routeParams.splat.split('/');
+    path.pop();
+    path = path.join('/');
+
+    delete formData[''];
+    for(let i in formData) {
+      if(this.props.options[i] && this.props.options[i].input.type === "number")
+        formData[i] = parseInt(formData[i]);
+      if(this.props.options[i] && this.props.options[i].input.emptyValue && !formData[i]) {
+        let temp = this.props.options[i].input.emptyValue;
+        for(let i2 in formData)
+          temp = temp.replace(':'+i2, slug(formData[i2], {lower: true}));
+
+        let others = {JDate: (new Date()).toISOString().slice(0,10), JPath: path};
+        for(let i2 in others)
+          temp = temp.replace(':'+i2, slug(others[i2], {lower: true}));
+
+        formData[i] = temp;
+      }
+    }
+    this.props.save(this.props.routeParams.splat, formData);
+    hashHistory.push('list/'+path);
+    //hashHistory.goBack();
+  }
+
+  newInputText = () => {
+    let attr = window.prompt("Lütfen yeni özelliğin ismini giriniz.");
+    if (attr != null) {
+      this.props.document.content[attr] = "";
+      this.forceUpdate();
+    }
+  }
+
+  newInputSelect = () => {
+    let attr = window.prompt("Lütfen yeni özelliğin ismini giriniz.");
+    if (attr != null) {
+      this.props.document.content[attr] = [];
+      this.forceUpdate();
+    }
   }
 
   getDataAttr(v) {
@@ -51,6 +92,7 @@ class EditDocuments extends Component {
           type: "select",
           isRelated: false,
           multiple: true,
+          allowAdditions: true,
           options: []
         }
       };
@@ -96,6 +138,10 @@ class EditDocuments extends Component {
           attr[1].push(i);
     }
     attr[1].sort((a, b) => { return (this.props.options[a].edit.order || 99) - (this.props.options[b].edit.order || 99); });
+
+    for(let val of this.props.variables)
+      if(attr[0].indexOf(val) === -1 && attr[1].indexOf(val) === -1 && attr[2].indexOf(val) === -1 && attr[3].indexOf(val) === -1)
+        attr[1].push(val);
 
     let pos1 = [];
     for(let value of attr[1])
@@ -144,17 +190,13 @@ class EditDocuments extends Component {
                   <Header as="h4" dividing>Özel Alanlar</Header>
                 </Grid.Column>
                 <Grid.Column textAlign="right">
-                  <Label color="green" basic>
+                  <Label color="green" basic onClick={this.newInputText}>
                     <Icon name="add" />
                      Giriş
                   </Label>
-                  <Label color="orange" basic>
+                  <Label color="blue" basic onClick={this.newInputSelect}>
                     <Icon name="add" />
                      Dizi
-                  </Label>
-                  <Label color="blue" basic>
-                    <Icon name="add" />
-                     Nesne
                   </Label>
                 </Grid.Column>
               </Grid>
@@ -163,7 +205,7 @@ class EditDocuments extends Component {
           </Grid>
         </Segment>
         <Segment attached="bottom" className={(this.state.tabIndex === 2) ? "": "hide"}>
-            {pos3}
+            {(this.state.tabIndex === 2) ?pos3:""}
         </Segment>
       </Form>
     );
@@ -189,7 +231,8 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = (dispatch) => {
     return {
-        setList: (v) => dispatch(setList(v))
+        setList: (v) => dispatch(setList(v)),
+        save: (path, data) => dispatch(save(path, data))
     };
 };
 

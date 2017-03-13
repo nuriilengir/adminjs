@@ -20,13 +20,21 @@ Dosya türüne bağlı olarak dosya içeriğini renklendirir ve hatalı yazımla
 * **Anahtar oluşturma:** https://github.com/settings/tokens
 Verilen bağlantıdan giriş için anahtar oluşturun. Anahtar oluştururken izinler kısmında sadece "public_repo" seçeneğini işaretleyin. Eğer test amaçlı kullanacaksanız hiçbir kutucuğu işaretlemeniz gerekmez.
 
-* **Canlı:** <https://bugra9.github.io/adminjs/>
+* **Demo:** <https://bugra9.github.io/adminjs/>
 Verilen bağlantı ile karalama yaptığımız depoyu yönetebilirsiniz.
 
 * **Kendi projende kullanma:**
 Bu depoyu çatallayın ve `docs/index.html` ile `public/index.html` dosyalarında `window.repo=".."` kısmını `window.repo="kullanıcıAdı/depo/dal"` şeklinde kendinize göre düzenleyin. Daha sonra `https://kullanıcıAdı.github.io/adminjs/` bağlantısı ile dosyalarınızı yönetmeye başlayabilirsiniz.
 
-## Hayaller ve Gerçekler
+## Ekran Görüntüleri
+
+<img src="https://s8.postimg.org/jmitwuuol/adminjs_ana_Dizin.png" width="49%" />
+<img src="https://s8.postimg.org/czw63od05/adminjs_list.png" width="49%" />
+<img src="https://s8.postimg.org/dzmgzds5x/adminjs_edit.png" width="40%" />
+<img src="https://s8.postimg.org/eqf755uj9/adminjs_edit2.png" width="40%" />
+<img src="https://s8.postimg.org/odipevnit/adminjs_resim_Ekleme.png" width="18%" />
+
+## Gerçekler
 Her ne kadar sistem yukarıdaki özellikleri karşılamayı amaçlasa da şu an en temel özellikleri geliştirilme aşamasında olduğu için amacından sapabilir. Bu sapmalar şunlardır;
 
 * Sistem sadece Github ile çalışmak üzere ayarlıdır.
@@ -46,12 +54,13 @@ https://github.com/jekyll/jekyll-admin
 - [x] Dizinlerin ve dosyaların listelenmesi
 - [x] Belgelerin düzenlenmesi
 - [x] Giriş yapılarının tanımlanması
-- [ ] Editörün yapılandırılması
-- [ ] Hızlı Ekleme (Örneğin makale eklerken sayfa değişmeden yeni etiket eklenebilmesi)
-- [ ] Belgenin kaydedilmesi
-- [ ] Yeni belge oluşturma
-- [ ] Dosya yükleme
-- [ ] İlgili kayıtların Github'a gönderilmesi (commit)
+- [x] Editörün yapılandırılması
+- [x] Hızlı Ekleme (Örneğin makale eklerken sayfa değişmeden yeni etiket eklenebilmesi)
+- [x] Belgenin kaydedilmesi
+- [x] Yeni belge oluşturma
+- [x] Dosya yükleme
+- [x] Eğer bir dizin altında ayar dosyası bulunuyorsa bunun okunup yorumlanması
+- [x] İlgili kayıtların Github'a gönderilmesi (commit)
 - [ ] "Commit" kayıtlarının "Pull Request" ile gönderilmesi
 
 ### Detaylı
@@ -59,7 +68,6 @@ https://github.com/jekyll/jekyll-admin
 - [ ] Giriş yapılarının çoğaltılması
 - [ ] Hızlandırma işlemleri
 - [ ] Testlerin eklenmesi
-- [ ] Eğer bir dizin altında ayar dosyası bulunuyorsa bunun okunup yorumlanması
 - [ ] İstatistik sayfasının eklenmesi
 - [ ] Github gibi diğer servislerin desteklenmesi
 - [ ] Jekyll gibi diğer sistemlerin desteklenmesi

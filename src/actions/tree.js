@@ -4,16 +4,16 @@ import jsyaml from 'js-yaml';
 
 
 /*export function login(token, nextPath) {
-  return (dispatch) => {
+  return (dispatch, getState) => {
     localforage.clear().then(function() {
         console.log('Database is now empty.');
-        login2(token, nextPath)(dispatch);
+        login2(token, nextPath)(dispatch, getState);
     });
   };
 }*/
 
 export function login(token, nextPath) {
-  return (dispatch) => {
+  return (dispatch, getState) => {
       let repo = "";
       if(window.repo)
         repo = window.repo;
@@ -30,14 +30,16 @@ export function login(token, nextPath) {
         .then(data => {
           if(data.message === "Bad credentials")
             throw new Error("Geçersiz token");
-          else {
+          else if(getState().tree.lastCommitSha !== data.object.sha){
             dispatch({
               type: 'FETCH_USER_SUCCESS',
               token: token
             });
-            dispatch({ type: 'SET_OPTIONS' });
+            //dispatch({ type: 'SET_OPTIONS' });
             fetchCommit(data.object, token)(dispatch);
           }
+          else
+            dispatch({ type: 'LOGIN_SUCCESS' });
         })
         .catch(error => {
           dispatch({
@@ -89,7 +91,8 @@ function fetchTree(obj, token) {
           dispatch({
             type: 'FETCH_TREE_SUCCESS',
             sha: data.sha,
-            length: data.tree.length
+            length: data.tree.length,
+            tree: data.tree
           });
           buildNewTree(data.tree, dispatch, token);
         }
@@ -119,7 +122,16 @@ function buildNewTree(tree, dispatch, token) {
     }
     node[name] = { file: tree[i], content: {} };
 
-    if(["markdown", "mkdown", "mkdn", "mkd", "md", "js", "css", "txt", "html", "htm", "json", "yaml"]
+    if(name === "_admin_attr.yml") {
+      dispatch({ type: 'SET_OPTIONS', path: node[name].file.path, options: node[name] });
+      localforage.getItem(node[name].file.sha+':c').then(value => {node[name].file.content = value});
+    }
+    else if(name === "_admin_menu.yml") {
+      dispatch({ type: 'SET_MENU', menu: node[name] });
+      localforage.getItem(node[name].file.sha+':c').then(value => {node[name].file.content = value});
+    }
+
+    if(["markdown", "mkdown", "mkdn", "mkd", "md", "js", "css", "txt", "html", "htm", "json", "yml", "yaml"]
         .indexOf(name.substring(name.lastIndexOf(".")+1)) === -1) {
       continue;
     }
@@ -146,10 +158,10 @@ function buildNewTree(tree, dispatch, token) {
             });
         }
         else {
+          node[name].content = value;
           dispatch({
             type: 'FETCH_BLOB_SUCCESS'
           });
-          node[name].content = value;
         }
     }).catch(function(err) {
         console.log("error", err);
@@ -164,19 +176,18 @@ function buildNewTree(tree, dispatch, token) {
 
 function fetchContent(data, content) {
   if(content.indexOf('---') === 0) {
-    content = content.split('---', 3);
+    content = ["", content.substring(3, content.indexOf('---', 1)), content.substring(content.indexOf('---', 1)+3)];
     data.content = jsyaml.load(content[1]);
     if(!data.content) {
       data.content = {};
-      console.log("İçi boş ---");
     }
     localforage.setItem(data.file.sha, data.content).catch(function(err) {console.log(err);});
-    localforage.setItem(data.file.sha+':c', content[2]).catch(function(err) {console.log(err);});
-    data.file.content = content[2];
+    localforage.setItem(data.file.sha+':c', content[2].trim()).catch(function(err) {console.log(err);});
+    data.file.content = content[2].trim();
   }
   else {
     localforage.setItem(data.file.sha, {}).catch(function(err) {console.log(err);});
-    localforage.setItem(data.file.sha+':c', content).catch(function(err) {console.log(err);});
+    localforage.setItem(data.file.sha+':c', content.trim()).catch(function(err) {console.log(err);});
     data.file.content = content;
   }
 }

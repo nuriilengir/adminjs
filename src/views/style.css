@@ -5,8 +5,8 @@
   -o-transition: all 0.5s ease-in;
   transition: all 0.5s ease-in;
 }
-.pushable {
-  min-height: 100vh;
+.pushable, .pusher {
+  min-height: 100vh !important;
 }
 .hide {
   display: none;
@@ -23,6 +23,10 @@
   margin-bottom: 5px;
 }
 
+.ui.header > .ui.image {
+  width: auto;
+}
+
 .ui.cards > .ui.card > .content > .header {
   font-size: 1em;
   margin-top: 0.2em;
@@ -34,4 +38,11 @@
 
 Button.item {
   border: none;
+}
+.collapsing > i {
+  cursor: pointer;
+}
+
+.sidebar.right {
+  background-color: white;
 }

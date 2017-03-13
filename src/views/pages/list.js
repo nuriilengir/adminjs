@@ -6,9 +6,64 @@ import { Menu, Icon, Breadcrumb, Container, Button, Grid, Table, Segment, Card }
 import JInput from '../inputs';
 
 import { sidebarToggle } from '../../actions/system';
+import { toggle, remove } from '../../actions/save';
 
 
 class ListDocuments extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {status: 0};
+  }
+
+  newDir = () => {
+    let name = window.prompt("Lütfen yeni dizinin ismini giriniz.");
+    if (name != null) {
+      this.props.dir[name] = {};
+      this.props.directories.push(name);
+      this.forceUpdate();
+    }
+  }
+
+  handleFileChange = (e) => {
+    let fileInput = e.target.files[0];
+    if(!fileInput)
+      return;
+    
+    let reader = new FileReader();
+    reader.readAsDataURL(fileInput);
+    reader.onload = () => {
+      this.setState({ status: 1 });
+      let repo = window.repo.split('/');
+      let token = this.props.token;
+      let content = reader.result.split(',')[1];
+      fetch(`https://api.github.com/repos/${repo[0]}/${repo[1]}/git/blobs`
+        ,{ method: 'POST', body: JSON.stringify({encoding: "base64", content}), headers: { "Authorization": "Basic "+(new Buffer(":"+token).toString('base64'))} }
+      )
+        .then(res => res.json())
+        .then(data => {
+          let obj = {
+            file: {
+              path: `${this.props.routeParams.splat}/${fileInput.name}`,
+              sha: data.sha
+            },
+            content: {}
+          };
+          this.props.addBlob(obj);
+          this.props.files.push(obj);
+          this.props.dir[fileInput.name] = obj;
+          this.setState({ status: 0 });
+        })
+        .catch(error => {
+          this.setState({ status: 2 });
+          console.log(error.message);
+        });
+    };
+
+    reader.onerror = function (error) {
+      console.log('Error: ', error);
+    };
+  }
+
   renderTableHeader() {
     let cell = this.props.variables.map((value) => {
       let input = this.props.options[value];
@@ -29,6 +84,8 @@ class ListDocuments extends Component {
 
   renderTableBody() {
     let row = this.props.documents.map((value) => {
+      if(value.file.path.split('/').pop() === '_admin_attr.yml')
+        return;
       let link = '/edit/'+value.file.path;
       let cell = this.props.variables.map((variable) => {
         let input = this.props.options[variable];
@@ -53,8 +110,8 @@ class ListDocuments extends Component {
           { cell }
           <Table.Cell collapsing>
             <Link to={link}><Icon name="edit" /></Link>
-            <Icon name="circle" color={color} />
-            <Icon name="remove" color="red" />
+            <Icon onClick={() => {this.props.toggle(value.file.path); this.forceUpdate();}} name="circle" color={color} />
+            <Icon onClick={() => {this.props.remove(value.file.path); this.forceUpdate();}} name="remove" color="red" />
           </Table.Cell>
         </Table.Row>
       );
@@ -68,7 +125,10 @@ class ListDocuments extends Component {
 
   renderDirectories() {
     return this.props.directories.map((value) => {
-      let link = `${this.props.location.pathname}/${value}`;
+      let path = this.props.location.pathname;
+      if(path[path.length-1] === '/')
+        path = path.substr(0, path.length-1);
+      let link = `${path}/${value}`;
       return (
         <Card centered key={value} as={Link} to={link}>
           <Card.Content className="center">
@@ -99,13 +159,25 @@ class ListDocuments extends Component {
   }
 
   render() {
-    let sections = [];
+    let sections = [{ key: "/", content: "Ana Dizin", as: Link, to: "list/" }];
     let link = "list";
     for(let value of this.props.location.pathname.substr(this.props.location.pathname.indexOf('/', 1) + 1).split('/')) {
       link += '/'+value;
       sections.push({ key: value, content: value, as: Link, to: link });
     }
     sections[sections.length-1].active = true;
+
+    let today = new Date();
+    let dd = today.getDate();
+    let mm = today.getMonth()+1; //January is 0!
+    let yyyy = today.getFullYear();
+
+    if(dd<10) dd='0'+dd;
+    if(mm<10) mm='0'+mm;
+
+    let newDocLink = sections[sections.length-1].to.replace('list/', 'edit/');
+    newDocLink += '/yeni.md';
+
 
     return (
       <div>
@@ -123,15 +195,16 @@ class ListDocuments extends Component {
               <Breadcrumb sections={sections} />
             </Grid.Column>
             <Grid.Column textAlign="right">
-              <Button compact basic>
-                <Icon name="upload" />
-                Belge Yükle
+              <Button compact basic onClick={() => this.fileInput.click()}>
+                <input type="file" style={{display: "none"}} onChange={this.handleFileChange} ref={(input) => { this.fileInput = input; }} />
+                <Icon loading={this.state.status===1?true:false} name="upload" />
+                Dosya Yükle
               </Button>
-              <Button compact basic>
+              <Button compact basic onClick={this.newDir}>
                 <Icon name="folder" />
-                Yeni Klasör
+                Yeni Dizin
               </Button>
-              <Button compact basic>
+              <Button as={Link} to={newDocLink} compact basic>
                 <Icon name="file" />
                 Yeni Belge
               </Button>
@@ -171,11 +244,16 @@ const mapStateToProps = (state) => ({
   documents: state.documents.documents,
   files: state.documents.files,
   directories: state.documents.directories,
+  dir: state.documents.collections,
+  token: state.tree.token
 });
 
 const mapDispatchToProps = (dispatch) => {
     return {
-        sidebarToggle: () => dispatch(sidebarToggle())
+        sidebarToggle: () => dispatch(sidebarToggle()),
+        toggle: (v) => dispatch(toggle(v)),
+        remove: (v) => dispatch(remove(v)),
+        addBlob: (obj) => dispatch({ type: 'ADD_DIFF', diff: { [obj.file.path]: {type: "addFile", obj } } })
     };
 };
 
